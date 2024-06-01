@@ -1,0 +1,288 @@
+\documentclass[a4paper, 12pt]{article}
+\usepackage[top=2.5cm, bottom=2.5cm, left=3cm, width=15.09cm]{geometry}
+
+\usepackage{mlmodern}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+
+\usepackage{mathtools,stmaryrd,galois,amsmath,amssymb,amsthm}
+\usepackage{graphicx,tikz}
+\usepackage{mleftright,xspace}
+
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
+
+\renewcommand*{\O}[1]{\mathrm{O}(#1)}
+\newcommand*{\ceil}[1]{\left\lceil #1 \right\rceil}
+\newcommand*{\floor}[1]{\left\lfloor #1 \right\rfloor}
+\newcommand*{\pr}[1]{\mathrm{P}\left(#1\right)}
+\newcommand*{\wdeg}[1]{\operatorname{wdeg}{#1}}
+
+\title{Hands-On 7: Algorithm Design 23/24}
+\author{Filippo Boni \and Giovanni Braccini \and Alessio Duè \and Giacomo Trapani}
+
+\begin{document}
+
+\maketitle
+
+\section{Problem 1}
+
+{\itshape
+  Consider the following variant of \(n\)-hunter Stag Hunt:
+  \begin{itemize}
+  \item only \(n\) hunters, with \(2 \leq m \leq n\), need to pursue the stag in order to catch it;
+  \item there is still a single stag;
+  \item the stag is shared only by the hunters that catch it;
+  \item each hunter prefers any fraction of the stag to a hare.
+  \end{itemize}
+
+  Find the Nash equilibria using the best response. Tip: try to show a case say with \(n = 4\).}
+
+\subsection{Solution}
+
+Reasoning about the best response, we need to find the best action for a player given the actions of all other players. We'll denote with \(s\) the number of hunters who choose stag.
+\begin{description}
+\item[Case 1: \(s \geq m-1\)] The hunter is incentivized to pursue the stag, since by doing so the hunt will be successful and he will receive a fraction of it, which they prefer to the hare they would otherwise.
+
+  Since this works for any value of \(s \geq m-1\), all hunters who chose hare are incentivized to switch to stag, and in the end all hunters pick the stag.
+
+\item[Case 2: \(s < m-1\)] Even if the hunter chooses stag, the threshold \(m\) will not be reached and he will get no reward. So, he will prefer hare.
+
+  At that point, \(s\) will still be less than \(m-1\). As a consequence, all hunters who chose stag will be incentivized to switch to hare, and in the end everyone will hunt hare.
+\end{description}
+
+\section{Problem 2}
+{\itshape
+Two people use the following algorithm to divide \$10 between themselves. Each person names an integer number in the range \([0, 10]\).
+\begin{itemize}
+	\item If the sum of the numbers is at most 10 then each person receives the amount of money she names and the remainder is destroyed.
+	\item Otherwise (the sum of the numbers exceeds 10)
+	\begin{itemize}
+		\item if the amounts named are different then the person who named the smaller amount receives that amount and the other person receives the remaining money.
+		\item If the amounts named are the same then each person receives \$5.
+	\end{itemize}
+\end{itemize}
+
+
+
+Find the Nash equilibria using the best response function. Tip: try to make a graphical representation of the problem.
+}
+\subsection{Solution}
+Call $x$ the amount of money named by Player 1, $y$ by Player 2. We need to distinguish between 4
+different cases:
+\begin{itemize}
+\item \(x+y < 10\). This is not a Nash equilibrium: \$\((10-x-y)\) are
+  destroyed, and both players have a strictly improving response (\(10-y\) for
+  player 1, \(10-x\) for player 2).
+
+\item \(x+y =10, x \neq y\). Not a Nash equilibrium, if \(x < y\) then player 1 can
+  name \(y - 1\) and receive \(y-1 > x\) (\(y-1 = x\) is not possible since
+  \(x+y=10\)). Same for player 2 if \(x > y\).
+
+\item \(x = y = 5\). This is a Nash equilibrium, both player maximized their
+  gains. If player 1 changes to any other amount \(x' > 5\), then
+  \(x' + y > 10\), and the players will receive respectively \(10-y=5\) and
+  \(y=5\). Same for player 2.
+
+\item \(x+y > 10, \left\{ x,y \right\} \neq \left\{ 5,6 \right\}, x \neq y\). This is
+  not a Nash equilibrium. If \(x > y\), then player 1 receives \(10-y < 5\), and
+  can improve its utility by naming \(y-1\). Same for player 2 if \(x < y\).
+
+\item \(x+y > 10, x= y \neq 6\). This is not a Nash equilibrium. Both players
+  receive \$5, but they can name \(x-1 > 5\) and receive it.
+
+\item \(x=6, y=5\) and vice versa, or \(x=y=6\). This is a Nash equilibrium,
+  both players gain \$5 and cannot improve their gain.
+\end{itemize}
+
+\section{Problem 3}
+{\itshape
+  An investment agency wants to collect a certain amount of money for a project.
+Aimed at convincing all the members of a group of $N$ people to contribute to the
+fund, it proposes the following contract: each member can freely decide either
+to contribute with 100 euros or not to contribute (retaining money on its own
+wallet). Independently on this choice, after one year, the fund will be rewarded
+with an interest of 50\% and uniformly redistributed among all the $N$ members of
+the group. Describe the game and find the Nash equilibrium.
+}
+\subsection{Solution}
+
+There are \(N\) players, with two actions: \emph{contribute} and \emph{don't contribute}.
+
+If \(c\) out of \(N-1\) players already contributed, the utility of the \(N\)th player is:
+\begin{itemize}
+\item \((100 \cdot (c + 1) \cdot 1.5) / N - 100 = (150 \cdot (c + 1))/ N - 100)\) if they choose to contribute;
+\item \(100 \cdot c \cdot 1.5 / N = 150 \cdot c / N\) otherwise.
+\end{itemize}
+
+Given this, the best choice is to contribute when:
+\begin{align*}
+\frac{150 (c + 1)}{N} - 100 &> \frac{150 c}{N} \\
+150c + 150 - 100 N &> 150 c \\
+N &< 1.5
+\end{align*}
+So no one will contribute unless \(N=1\).
+
+This is an instance of free riding: in the end all investors will get nothing, while they could gain €50 each if they all contributed.
+
+\section{Problem 4}
+{\itshape
+After Diabolik's capture, inspector Ginko is forced to free him because the judge, scared of Eva Kant's revenge, has acquitted him with an excuse. Outraged by the incident, the mayor of Clerville decides to introduce a new legislation to make judges personally liable for their mistakes. The new legislation allows the accused to sue the judge and have him punished in case of error. Consulted on the subject, Ginko is perplexed and decides to ask you to provide him with a formal demonstration of the correctness/incorrectness of this law.
+}
+\subsection{Solution}
+To give a solution we enumerate the possible cases. We denote with
+\begin{itemize}
+	\item \textbf{sentence} the act of, \textbf{do not sentence} otherwise.
+	\item \textbf{sue} the act of, \textbf{do not sue} otherwise
+	\item \textbf{honest judge} a judge who always follows the law, \textbf{dishonest judge} a judge
+	who is afraid of being sent to prison or the criminals's revenge. We shall distinguish whether it is
+	more scared of the criminals or the prison, giving a higher score to one of the options one a time.
+	\item \textbf{innocent} if the person accused is innocent, \textbf{guilty} otherwise.
+	\item \textbf{law enacted} if the law in question is enacted, \textbf{law not enacted} otherwise.
+\end{itemize}
+
+
+To evaluate the impact of the law in the different cases, we shall enumerate
+them: player 1 is the accused, player 2 is the judge.
+
+The utility for the accused is in all cases 0 if he is sentenced and 1
+otherwise. As for the judge, we rank the possible outcomes (no consequence,
+prison, threats from criminals) of his action according to his temperament.
+
+The accused can't take any action in the cases where he is innocent or the law
+is not enacted.
+
+\begin{center}
+  Honest judge, guilty accused, law enacted
+  \\
+  \begin{tabular}{|c|c|c|}
+	\hline
+	& sentence & don't sentence \\\hline
+	sue &  0,1 & 1,0 \\\hline
+	don't sue & 0,1 & 1,0 \\\hline
+  \end{tabular}
+\end{center}
+
+\begin{center}
+  Honest judge, guilty accused, law not enacted
+  \\
+  \begin{tabular}{|c|c|}
+	\hline
+	sentence & don't sentence \\\hline
+	0,1 & 1,0 \\\hline
+	% don't sue & 0,1 & 1,0 \\\hline
+  \end{tabular}
+\end{center}
+
+\begin{center}
+  Honest judge, innocent accused, law enacted
+  \\
+  \begin{tabular}{|c|c|}
+	\hline
+	sentence & don't sentence \\\hline
+	0,0 & 1,1 \\\hline
+  \end{tabular}
+\end{center}
+
+\begin{center}
+  Honest judge, innocent accused, law not enacted
+  \\
+  \begin{tabular}{|c|c|}
+	\hline
+	sentence & don't sentence \\\hline
+	0,0 & 1,1 \\\hline
+  \end{tabular}
+\end{center}
+
+\begin{center}
+  Dishonest judge 1 (prison), guilty accused, law enacted
+  \\
+  \begin{tabular}{|c|c|c|}
+	\hline
+	& sentence & don't sentence \\\hline
+	sue &  0,1 & 1,0 \\\hline
+	don't sue & 0,1 & 1,2 \\\hline
+  \end{tabular}
+\end{center}
+
+\begin{center}
+  Dishonest judge 1 (prison), guilty accused, law not enacted
+  \\
+  \begin{tabular}{|c|c|}
+	\hline
+	sentence & don't sentence \\\hline
+	0,0 & 1,1 \\\hline
+  \end{tabular}
+\end{center}
+
+\begin{center}
+  Dishonest judge 1 (prison), innocent accused, law enacted
+  \\
+  \begin{tabular}{|c|c|}
+	\hline
+	sentence & don't sentence \\\hline
+	0,0 & 1,1 \\\hline
+  \end{tabular}
+\end{center}
+
+\begin{center}
+  Dishonest judge 1 (prison), innocent accused, law not enacted
+  \\
+  \begin{tabular}{|c|c|}
+	\hline
+	sentence & don't sentence \\\hline
+	0,0 & 1,1 \\\hline
+  \end{tabular}
+\end{center}
+
+\begin{center}
+  Dishonest judge 2 (mafia), guilty accused, law enacted
+  \\
+  \begin{tabular}{|c|c|c|}
+	\hline
+	& sentence & don't sentence \\\hline
+	sue &  0,0 & 1,1 \\\hline
+	don't sue & 0,0 & 1,2 \\\hline
+  \end{tabular}
+\end{center}
+
+\begin{center}
+  Dishonest judge 2 (mafia), guilty accused, law not enacted
+  \\
+  \begin{tabular}{|c|c|}
+	\hline
+	sentence & don't sentence \\\hline
+	0,0 & 1,1 \\\hline
+  \end{tabular}
+\end{center}
+
+\begin{center}
+  Dishonest judge 2 (mafia), innocent accused, law enacted
+  \\
+  \begin{tabular}{|c|c|}
+	\hline
+	sentence & don't sentence \\\hline
+	0,0 & 1,1 \\\hline
+  \end{tabular}
+\end{center}
+
+\begin{center}
+  Dishonest judge 2 (mafia), innocent accused, law not enacted
+  \\
+  \begin{tabular}{|c|c|}
+	\hline
+	sentence & don't sentence \\\hline
+	0,0 & 1,1 \\\hline
+  \end{tabular}
+\end{center}
+
+We can make some observations:
+\begin{itemize}
+\item an honest judge will always make the right choice, regardless of the law;
+\item the disonest judge 2, which is more scared by threats from criminals than by the possibility of going to prison, will prefer not to sentence the accused reagardless of the law;
+\item the law only impacts the disonest judge 1, which will do anything to avoid prison, and if possible will also avoid threats. Without the new law, this judge would never sentence criminals; with the law, he is instead incentivised to judge fairly.
+\end{itemize}
+
+We may conclude that the law could be effective if the judge in the problem statement behaves as dishonest judge 1.
+
+\end{document}
