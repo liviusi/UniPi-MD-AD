@@ -1,0 +1,316 @@
+\documentclass{article}
+\usepackage{graphicx} % Required for inserting images
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{minted}
+\usepackage[table]{xcolor}
+\title{Hands-On 8: Algorithm Design A.Y. 2024}
+
+\author{Emanuele Buonaccorsi \and Suranjan Ghosh \and Giacomo Trapani}
+
+\newtheorem*{remark}{Remark}
+\newtheorem*{example}{Example}
+\newtheorem*{theorem}{Theorem}
+\newcommand{\argmax}{\mathop{\mathrm{argmax}}\limits}
+
+\date{20 May 2024}
+\begin{document}
+
+\maketitle
+
+\section{Exercise 1}
+{\itshape
+Two players drive up to the same intersection at the same time. If both attempt to cross, the
+result is a fatal traffic accident. The game can be modeled by a payoff matrix where crossing
+successfully has a payoff of 1, not crossing pays 0, while an accident costs -100.
+\begin{itemize}
+	\item Build the payoff matrix
+	\item Find the Nash equilibria  
+	\item Find a mixed strategy Nash equilibrium  
+	\item Compute the expected payoff for one player (the game is symmetric)
+\end{itemize}
+}
+\subsection{Solution}
+\subsubsection*{Build the payoff matrix}
+\begin{center}
+	\begin{tabular}{|c|c|c|}
+        \hline
+        & Cross & Do not cross \\\hline
+        Cross &  -100, -100 & 1, 0 \\\hline
+        Do not cross & 0, 1 & 0, 0 \\\hline
+  \end{tabular}
+\end{center}
+
+\subsubsection*{Find the Nash equilibria}
+Nash equilibria are \textbf{Cross, Do not cross} ((1, 0), top right) and \textbf{Do not cross,
+Cross} ((0, 1), bottom left).
+
+\begin{center}
+	\begin{tabular}{|c|c|c|}
+        \hline
+        & Cross & Do not cross \\\hline
+        Cross &  -100, -100 & \cellcolor{green!30}1, 0 \\\hline
+        Do not cross & \cellcolor{green!30}0, 1 & 0, 0 \\\hline
+  \end{tabular}
+\end{center}
+
+\subsubsection*{Find a mixed strategy Nash equilibrium}
+Call \(u_1\) the utility function for Player 1. To find a mixed strategy Nash equilibrium
+the utility cost for action \textbf{Cross} and \textbf{Do not cross} must be the same.
+\[
+	u_1(\text{Cross}) = u_1(\text{Do not cross})
+\]
+In other words, we need to choose a \(p\) such that
+\[
+	\begin{aligned}
+		& -100p + 1(1-p) = 0(p) + 0(1-p) \\
+		& -100p + 1 - p = 0 \\
+		& p = \dfrac{1}{101}
+	\end{aligned}
+\]
+This means Player 1 is willing to randomize whether to cross or not if Player 2 is not crossing
+\(100/101\) times and crossing otherwise.
+
+Since the game is symmetric, the same reasoning can be applied for Player 2.
+\qed
+
+\subsubsection*{Compute the expected payoff for one player}
+First we calculate the probability each outcome occurs.
+\begin{center}
+	\begin{tabular}{|c|c|c|}
+        \hline
+        & Cross & Do not cross \\\hline
+        Cross &  \(1/10201\) & \(100/10201\) \\\hline
+        Do not cross & \(100/10201\) & \(10000/10201\) \\\hline
+  \end{tabular}
+\end{center}
+
+We choose a player and we multiply the probability of each outcome by its payoff and we
+sum the results.
+\[
+	(-100) \times 1/10201 + 1 \times 100/10201 = 0.
+\]
+
+\section{Exercise 2}
+{\itshape
+Kicking a penalty, if the kicker sends the ball one side and the goalkeeper goes on the
+same side, the latter will always be able to catch the ball and avoid the goal.
+A certain kicker never fails when kicks left, instead he sometimes fails (say once
+every four penalties) when kicks right. Should him prefer kicking left? Model this
+situation as a game, describe a strategy both for the kicker and the goalkeeper and
+compute the expected payoff for both players.
+}
+
+\subsection{Solution}
+To reason about this problem, we must first build the payoff matrix. We also calculate the
+expected payoff for both actions. We say Player 1 is the goalkeeper, Player 2 is the kicker,
+and in order to be as generic as possible we say the kicker fails once every
+\(x \in \mathbb{N^+}\) penalties.
+
+We assume that "failing" means that the kicker instead of kicking right, actually kicks left.
+
+\
+
+\begin{table}[h!]
+    \centering
+    \renewcommand{\arraystretch}{1.5} % Increases the height of the rows
+    \setlength{\tabcolsep}{15pt}      % Increases the width of the columns
+    {\Large % Increases the font size within the group
+    \begin{tabular}{|c|c|c|}
+        \hline
+        & Kicks L & Kicks R \\\hline
+        Dives L &  1, 0 & \( \frac{1}{x}, \frac{x-1}{x} \) \\\hline
+        Dives R & 0, 1 & 1, 0 \\\hline
+    \end{tabular}
+    }
+    \caption{Payoff matrix, where player 1 (on the left) is the goalkeeper and player 2 (on top) is the kicker.}
+    \label{tab:penalty-kick-game}
+\end{table}
+
+\
+
+Let's call \(p\) the probability that the goalkeeper chooses to dive left. And let's call \(q\) the probability that the kicker chooses to kick left.
+The expected payoff for the goalkeeper is (for both his/her possible actions):
+\[
+E_1(\text{Dives L}) = 1q + \frac{1}{x}(1-q)
+\]
+\[
+E_1(\text{Dives R}) = 0q + 1(1-q) = 1 - q
+\]
+
+In order to be able to randomize its choices, the utility of both actions available must be
+the same.
+\[
+	\begin{aligned}
+        & E_1(\text{Dives L}) = E_1(\text{Dives R}) \\
+        & \dfrac{q(x-1)+1}{x} = 1 - q \\
+        & \dfrac{q(2x-1)}{x} = \dfrac{x-1}{x} \\
+        & q = \dfrac{x-1}{2x-1}
+	\end{aligned}
+\]
+
+\
+
+Doing the same thing for the kicker:
+\[
+E_2(\text{Kicks L}) = 0p + 1p
+\]
+\[
+E_2(\text{Kicks R}) = (1-p)\dfrac{x-1}{x} + 0p
+\]
+
+In order to make the utility of both actions the same:
+
+\[ E_2(\text{Kicks L}) = E_2(\text{Kicks R}) \iff  p = \dfrac{x-1}{2x-1} \]
+
+\
+
+So, when in a mixed strategy Nash equilibrium, the kicker would actually prefer to kick right. For example, if x=4 (the kicker fails one out of 4 right kicks), the probability of kicking left would be \(q = 3/7 \approx 0.43\).
+
+\section{Exercise 3}
+{\itshape
+Two cars stand on the opposite sides of a long bridge (as long as they cannot see the other
+side) that is narrow enough that only one car can cross it. If both attempt to cross the bridge,
+they will meet in the middle and remain stuck for several hours until the tow truck rescues them.
+As an alternative, each driver may decide to follow a secondary road, which is much wider but
+also much longer.  Model this situation as a game, find the Nash equilibrium and discuss a
+possible mixed strategy.
+}
+
+\subsection{Solution}
+
+\subsubsection*{Build the payoff matrix and find the equilibria}
+
+We define these outcomes:
+
+\begin{itemize}
+    \item \(S\) (stuck) if the player is stuck
+    \item \(F\) (fast) if the player is able to cross the fast road
+    \item \(L\) (long) if the player crosses the long road
+\end{itemize}
+
+We then define the payoff matrix:
+
+\begin{center}
+    \begin{tabular}{|c|c|c|}
+        \hline
+                        & Cross & Do not cross \\\hline
+        Cross           &  S, S & F, L \\\hline
+        Do not cross    &  L, F & L, L \\\hline
+    \end{tabular}
+\end{center}
+
+If we rank these outcomes by defining this ordinal payoff:
+
+\[ F > L > S \]
+
+The matrix becomes:
+
+\begin{center}
+    \begin{tabular}{|c|c|c|}
+        \hline
+                        & Cross & Do not cross \\\hline
+        Cross           & (0, 0) & \cellcolor{green!30}(2, 1) \\\hline
+        Do not cross    & \cellcolor{green!30}(1, 2) & (1, 1) \\\hline
+    \end{tabular}
+\end{center}
+
+Where the ones in green are the Nash equilibria.
+
+
+\subsubsection*{Mixed strategy}
+
+\begin{itemize}
+    \item Let \( p \) be the probability that Player 1 chooses "Cross."
+    \item Let \( q \) be the probability that Player 2 chooses "Cross."
+\end{itemize}
+
+\
+
+The expected payoffs for player one are:
+\[
+E_1(\text{Cross}) = q \cdot 0 + (1 - q) \cdot 2 = 2(1 - q)
+\]
+\[
+E_1(\text{Do not cross}) = q \cdot 1 + (1 - q) \cdot 1 = 1
+\]
+
+The expected payoffs for player two are:
+\[
+E_2(\text{Cross}) = p \cdot 0 + (1 - p) \cdot 2 = 2(1 - p)
+\]
+\[
+E_2(\text{Do not cross}) = p \cdot 1 + (1 - p) \cdot 1 = 1
+\]
+
+\
+
+\noindent For a mixed strategy to be a Nash equilibrium, the players must be indifferent to the strategies they choose. This means the expected payoffs for both strategies should be equal.
+
+For Player 1 to be indifferent:
+\[
+2(1 - q) = 1 \iff q = \frac{1}{2}
+\]
+
+For Player 2 to be indifferent:
+\[
+2(1 - p) = 1 \iff p = \frac{1}{2}
+\]
+
+
+
+
+
+
+
+
+
+\section{Exercise 4}
+{\itshape
+The Municipality of your city wants to implement an algorithm for the assignment of children
+to kindergartens that, on the one hand, takes into account the desiderata of families and, on
+the other hand, reduces city traffic caused by taking children to school. Every school has a
+maximum capacity limit that cannot be exceeded under any circumstances. As a form of welfare,
+the Municipality has established the following two rules:   
+\begin{itemize}
+	\item  in case of a child already attending a certain school, the sibling is granted the
+	same school;
+	\item families with only one parent have priority for schools close to the workplace.
+\end{itemize}
+Model the situation as a stable matching problem and describe the payoff functions of
+the players.
+
+Question: what happens to twin siblings?   
+}
+
+\subsection{Solution}
+The idea is to re-use the \textit{stable marriage algorithm} presented during lecture. Our aim is to model the problem in a way that we can directly apply the algorithm to solve it, without changing anything in the original algorithm provided.
+
+\
+
+In the algorithm men and women play a different part, so our purpose shall be to model
+the problem and define who are the men, who are the women and what criteria are they using to build their preferences lists. The solution we propose is to:
+\begin{itemize}
+	\item \textbf{define as a \textit{man} each of the kindergartens' available seats}, their preference
+	list is ordered by the ``sibling condition'' i.e. each kindergarten \(K\) prefers a sibling
+	of a child enrolled the previous year(s) over a child who has no siblings in \(K\);
+	\item \textbf{define as a \textit{woman} the kids}, their preference list is ordered by the
+	distance to each kindergarten.
+\end{itemize}
+
+Choosing such a model, we always satisfy the condition given in the first rule and we
+give priorities according to the second rule.
+
+It is evident this model cannot handle correctly twin siblings: we shall prove this
+with a minimal example.
+
+\begin{example}
+	Assume we have 2 kindergartens and the both of them declare their available spots
+	for the new year are 1. Suppose we have only 1 family with a single pair of twin
+	siblings. Given the rules mentioned in the problem statement, we cannot allocate
+	seats for the twin siblings because it is not possible for the both of them to
+	attend the same kindergarten. \qed
+\end{example}
+\end{document}
