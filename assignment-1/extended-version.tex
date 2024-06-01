@@ -1,0 +1,351 @@
+\documentclass[a4paper, 12pt]{article}
+\usepackage[top=2.5cm, bottom=2.5cm, left=3cm, width=15.09cm]{geometry}
+
+\usepackage{mlmodern}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+
+\usepackage{mathtools,stmaryrd,galois,amsmath,amssymb,amsthm}
+\usepackage{graphicx}
+\usepackage{mleftright,xspace}
+\usepackage{algorithm}
+\usepackage{algorithmic}
+
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
+\DeclarePairedDelimiter\floor{\lfloor}{\rfloor}
+
+\title{Hands-On 1: Algorithm Design 23/24}
+\date{17 March 2024}
+\author{Filippo Boni \and Alessio Duè \and Giacomo Trapani}
+
+\begin{document}
+
+\maketitle
+
+\section{Exercise 1}
+{
+\itshape{Describe and analyze how to transform the randomized Karp-Rabin string search algorithm from Monte Carlo to Las Vegas}.
+}
+\section*{Solution}
+
+The main idea here is to consider the rolling hash technique, which in the standard implementation is a Monte Carlo algorithm (which may return false positives). Assuming that:
+
+\[P \text{ is a pattern } P:[0, \dots, m-1]\]
+\[T \text{ is a text } T:[0, \dots, n-1]\]
+
+\subsection{Algorithmic Implementation}
+A possible solution for the problem is to analyze algorithmically a version of the Karp-Rabin method that satisfies the given condition of no errors; here is the proposed approach:
+
+\begin{lemma}
+  Every positive integer \( a \) has at most \( \log_2 x \) distinct prime divisors.
+\end{lemma}
+
+\begin{proof}
+  By the \textit{fundamental theorem of arithmetic}, we can write \( x \) as a product of primes \( X = \prod_{i=1}^{k} p_i \); since \( p_1 = 2 \), then \( x = \prod_{i=1}^{k} p_i \geq 2^k \). Therefore, it follows that \( k \leq \log_2 x \).
+\end{proof}
+
+\begin{lemma}
+  Let \( \pi(x) \) be the cardinality of the set of prime numbers in the interval \([2;x]\). The value of \( \pi(x) \) for \( x \geq 2 \) is approximately \( \frac{x}{\log(x)} \).
+\end{lemma}
+
+\noindent
+We use an operator \(\mathrm{hash}(s)\) that computes the hash for a string, and \(U(h, x)\) that updates the rolling hash \(h\) with a new character \(x\).
+
+Here follows the pseudo-code for the Karp-Rabin Las-Vegas:
+
+\begin{algorithm}[H]
+\caption{KARP-RABIN(T, P, hash, p)}
+\label{alg:karp-robin}
+\begin{algorithmic}[1]
+\STATE $m \leftarrow |P|$
+\STATE $n \leftarrow |T|$
+\STATE $target \leftarrow \mathrm{hash}(P)$
+\STATE $current\_hash \leftarrow \text{None}$
+
+\FOR{$i \in 1, \dots, n-m$}
+\IF{$current\_hash \neq \text{None}$}
+\STATE $current\_hash \leftarrow U( current\_hash, T[i+m])$
+\ELSE
+\STATE $current\_hash \leftarrow \mathrm{hash}(T[i:m])$
+\ENDIF
+
+\IF{$current\_hash = target$}
+\IF{$\text{Check\_String\_Equality}(T[i:i+m], P)$}
+\STATE Print("Match found")
+\STATE \textbf{return} $(i, i+m)$
+\ENDIF
+\ENDIF
+\ENDFOR
+
+\STATE \textbf{return} None
+\end{algorithmic}
+\end{algorithm}
+
+\subsection{Algorithm Analysis}
+\subsubsection{False Matches}
+\begin{theorem}
+Assuming \( m \geq 1 \), \( n \geq 2 \), \( K \) constant, \( B \) a suitably large number in \( N \), \( p \) a randomly chosen prime number in the interval \([2, B]\), Karp-Rabin reports a false match for a given position with a probability of at most $\frac{1}{K}$
+\end{theorem}
+
+\begin{proof}
+Let:
+\[ \text{target} = \text{hash}(P) \]
+\[ T_i = \text{hash}(T[i:i+m]); \]
+Define:
+\begin{itemize}
+\item NoMatch to be the set of indices \( i \) for which \( T_i \neq \text{target} \), i.e., no match with target;
+\item \( x = \prod_{i \in \text{NoMatch}} (|T_i - \text{target}|) \).
+\end{itemize}
+
+We know that \( x\) is a positive integer and since \( | \text{NoMatch} | \leq n-m \) and \( | T_i - \text{Target} | \leq 2^m \), we can say that \( x \leq 2^{m (n-m)} \leq 2^{mn} \) . By Lemma 1, we deduce that \( x \) has at most \( m \cdot n \) prime divisors. Since we have a false match when \( T_{i} \bmod p  = \text{target} \bmod p \), then if there were a false match, \( p \) would divide \( x \).
+
+The following probability results are derived:
+\[ \text{Pr}(\text{false match}) \leq \text{Pr}(p \text{ divides } x) = \frac{\text{number of prime divisors of } x}{\pi (B)} \leq \frac{mn}{\pi (B)} \]
+Choosing \( B = K \cdot m \cdot n \), it follows that \( \text{Pr}(\text{false match}) = O\left(\frac{1}{K}\right) \).
+\end{proof}
+
+\subsubsection{Complexity Analysis}
+\begin{description}
+\item[Worst case] we have a false match at every position: checking \( m \) characters \( n \) times \(\Rightarrow O(m \cdot n)\).
+\item[Best case] we have a true match in the first position: checking \( m \) characters once \(\Rightarrow O(m)\).
+\item[Expected] the probability of a false match at each position is $O(1/K)$, so the expected number of false matches is $O(n / K)$. The expected running time is $O(nm/K + n + m)$. We can choose $K$ such that $m/K=c$ with $c$ constant; for instance \(K = m\). We then obtain $O(m + n)$.
+
+  The running time is not influenced by the value of $K$, except for the generation of the prime $p$, which is an additive logarithmic term in the asymptotic complexity and can thus be ignored.
+\end{description}
+
+\section{Exercise 2}
+{
+	\itshape{Show that \(h_{ab}(x) = (a x + b \mod p) \mod m\) is 2-independent.}
+}
+
+\section*{Solution}
+We call \(x_1\), \(x_2\) two values in \(U\) such that \(x_1 \neq x_2\).
+We have to prove that
+\[
+	\Pr_{h \in \mathit{H}}[h(x_1) = y_1 \wedge h(x_2) = y_2] \leq \dfrac{1}{m^2}.
+\]
+
+
+First, we consider the linear system
+\[
+	\begin{aligned}
+		\left\{ 
+		\begin{array}{l}
+			z_1 = ax_1 + b \mod p \\
+			z_2 = ax_2 + b \mod p
+		\end{array} 
+	\right.
+	\end{aligned}
+\]
+
+Since \(p\) is prime, we know from Lagrange's theorem there is only one mapping from pairs \((x_1, x_2)\) to
+\((z_1, z_2)\), and we have \(p\times(p-1)\) possible pairs of \((z_1, z_2)\).
+
+We notice the number of values in the same residual class modulo \(m\) has a lower bound in \(\floor{p/m}\)
+and an upper bound in \(\floor{p/m} + 1\).
+
+We can now give the result
+\[
+	\dfrac{1}{p(p-1)} \times \left(\floor{\dfrac{p}{m}}\right)^2 \leq \Pr_{h \in \mathit{H}}[h(x_1) = y_1 \wedge h(x_2) = y_2] \leq \dfrac{1}{p(p-1)} \times \left(\floor{\dfrac{p}{m}} + 1\right)^2
+\]
+
+We can approximate \(p(p-1)\) with \(p^2\) and get the upper bound we have in the thesis.\qed
+
+\section{Exercise 3}
+{
+\itshape{Consider the deletion in cuckoo hashing: build an example so that the deletion does not produce a feasible graph, meaning that there is no insertion-only sequence that can lead to that graph. Show how to fix this by randomly choosing among \(h_1\) and \(h_2\) when inserting.}
+}
+\section*{Solution}
+
+Consider the graph associated with the state of a Cuckoo hash table. It is specified by a set of nodes \(V\). For each position \(i\) of the table \(T\) there is a node \(i \in V\) if \(T[i]\) is empty, or \((i, x) \in V\) if \(T[i] = x\). We define the set of all valid sets of nodes as follows:
+\[ \mathbf{V} =
+  \begin{aligned}[t]
+    \{ &V \subseteq \mathbb Z_{m} \cup (\mathbb Z_{m} \times X) \mid \forall i \in \mathbb Z_{m}.\\
+       &(i \in V \vee \exists x \in X.\; (i, x) \in V) \\
+       &\wedge (\forall x,y \in X.\; (i, x) \in V \Rightarrow \\
+         &\qquad\begin{aligned}[t]
+           &(i = h_1(x) \vee i = h_2(x)) \\
+           &\wedge i \notin V \\
+           &\wedge ((i, y) \in V \Rightarrow x = y)) \},
+         \end{aligned}
+  \end{aligned}  \]
+where \(X\) is the set of values that can be put into the hash table.
+
+The graph also has a set of undirected edges \(E \subseteq \left\{ \left\{ v_1, v_2 \right\} \mid v_1,v_2 \in V \right\}\). However, given the nodes \(V\) and the two hash functions \(h_1,h_2\), \(E\) is uniquely determined as the set:
+\begin{align*}
+  \mathrm{edges(V)} =
+  &\{ \left\{ (h_1(x), x), (h_2(x), y) \right\} \mid (h_1(x), x), (h_2(x), y) \in V \} \\
+  \cup& \{ \left\{ (h_1(x), y), (h_2(x), x) \right\} \mid (h_1(x), y), (h_2(x), x) \in V \} \\
+  \cup& \{ \left\{ h_1(x), (h_2(x), x) \right\} \mid h_1(x), (h_2(x), x) \in V \} \\
+  \cup& \{ \left\{ (h_1(x), x), h_2(x) \right\} \mid (h_1(x), x), h_2(x) \in V \}
+\end{align*}
+
+From now on we'll just deal with the nodes \(V\), implicitly referring to the graph \((V, \mathrm{edges}(V))\).
+
+Let's define the functions \(\mathrm{ins}, \mathrm{del}, \mathrm{shift} : \mathbf{V} \times X \to \mathbf{V}\), which model the effect of inserting or deleting an element from the table.
+
+
+\begin{align*}
+  \mathrm{del}(V, x) &=
+                       \begin{dcases}
+                         (V \setminus \left\{ (h_1(x), x) \right\}) \cup \left\{ h_1(x) \right\} & (h_1(x), x) \in V \\
+                         (V \setminus \left\{ (h_2(x), x) \right\}) \cup \left\{ h_2(x) \right\} & (h_2(x), x) \in V
+                       \end{dcases}
+  \\[4ex]
+  \mathrm{ins}(V, x) &=
+                            \begin{dcases}
+                              (V \setminus h_1(x)) \cup \left\{ (h_1(x), x) \right\}
+                              & h_1(x) \in V
+                              \\
+                              (\mathrm{shift}(V, y) \setminus h_1(x)) \cup \left\{ (h_1(x), x) \right\}
+                              & (h_1(x), y) \in V \wedge y \neq x
+                            \end{dcases}
+  \\[4ex]
+  \mathrm{shift}(V, x) &=
+  \begin{dcases}
+    (V \setminus \left\{ (h_1(x), x), h_2(x) \right\}) \cup \left\{ h_1(x), (h_2(x), x) \right\} \\
+    \qquad \text{if }(h_1(x), x) \in V \wedge h_2(x) \in V \\[3ex]
+    (V \setminus \left\{ (h_2(x), x), h_1(x) \right\}) \cup \left\{ h_2(x), (h_1(x), x) \right\} \\
+    \qquad \text{if }(h_2(x), x) \in V \wedge h_1(x) \in V \\[3ex]
+    (\mathrm{shift}(V, y) \setminus \left\{ (h_1(x), x), h_2(x) \right\}) \cup \left\{ h_1(x), (h_2(x), x) \right\} \\
+    \qquad \text{if }(h_1(x), x) \in V \wedge (h_2(x), y) \in V \\[3ex]
+    (\mathrm{shift}(V, y) \setminus \left\{ (h_2(x), x), h_1(x) \right\}) \cup \left\{ h_2(x), (h_1(x), x) \right\} \\
+    \qquad \text{if }(h_2(x), x) \in V \wedge (h_1(x), y) \in V
+  \end{dcases}
+\end{align*}
+
+\(\mathrm{shift}(V, x)\) moves \(x\) from its current slot to its alternative slot (from \(h_1(x)\) to \(h_2(x)\) or vice versa). If the destination is already occupied by another element \(y\), then \(y\) is shifted too. For simplicity, we assume no rehashing is necessary; \(\mathrm{shift}(V, x)\) is not defined if there is a cycle (the recursion isn't well founded).
+
+\subsection{Problematic deletions}
+
+Let's consider a minimal example that shows how deletions can produce a graph which is not obtainable by insertions alone. Let \(\mathcal H = \left\{ h_{a,b} \mid a \in \mathbb Z_{p}^+, b \in \mathbb Z_{m} \right\}\), \(h_{a,b}(x) = ((ax + b) \bmod p) \bmod m\), \(p=3\), \(m=2\), \(h_1 = h_{1,0} \in \mathcal H\), \(h_2 = h_{1,1} \in \mathcal H\). The hash table has 2 slots and contains value in \(\mathbb Z_{3}\). Their hashes are:
+\[\begin{array}{r|c|c|c}
+  x & 0 & 1 & 2 \\\hline
+  h_1 & 0 & 1 & 0 \\\hline
+  h_2 & 1 & 0 & 0 \\
+\end{array}\]
+
+The sequence of operations \texttt{insert 2, insert 0, delete 2} yields the table \texttt{[empty, 0]}. This is not obtainable via insertions alone, because if the first position is empty, \texttt{0} will be inserted there.
+
+\subsection{Solution with random hash function selection}
+
+Let's redefine ins as follows:
+\begin{align*}
+    \mathrm{ins'}(V, x) &=
+                         \begin{dcases}
+                           (V \setminus h(x)) \cup \left\{ (h(x), x) \right\}
+                           & h(x) \in V
+                           \\
+                           (\mathrm{shift}(V, y) \setminus h(x)) \cup \left\{ (h(x), x) \right\}
+                           & (h(x), y) \in V \wedge y \neq x
+                         \end{dcases}
+    \\
+    \text{where }&\text{\(h\) is choosen randomly between \(h_1\) and \(h_2\)}
+\end{align*}
+
+This is of course not a function in the mathematical sense. We can more precisely treat it as a relation:
+
+\begin{align*}
+\mathrm{ins'} ={} &\left\{ ((V, x), V') \bigm|
+    \begin{aligned}
+      &(h_1(x) \in V \wedge V' = (V \setminus h_1(x)) \cup \left\{ (h_1(x), x) \right\}) \\
+      &\vee ((h_1(x), y) \in V \wedge y \neq x \wedge V' = (\mathrm{shift}(V, y) \setminus h_1(x)) \cup \left\{ (h_1(x), x) \right\})
+    \end{aligned}\right\} \\[2ex]
+    \cup{}
+    &\left\{ ((V, x), V') \bigm|
+    \begin{aligned}
+      &(h_2(x) \in V \wedge V' = (V \setminus h_2(x)) \cup \left\{ (h_2(x), x) \right\}) \\
+      &\vee ((h_2(x), y) \in V \wedge y \neq x \wedge V' = (\mathrm{shift}(V, y) \setminus h_2(x)) \cup \left\{ (h_2(x), x) \right\})
+    \end{aligned}
+  \right\}
+\end{align*}
+
+\((V, x)\,\mathrm{ins'}\,V'\) means that \(V'\) is one of the two possible outcomes of inserting \(x\) in the graph \(V\).
+
+Now we'll prove that:
+\begin{enumerate}
+\item given a valid graph, del always produces a valid graph (i.e. a graph in \(\mathbf{V}\));
+\item it is possible to produce any valid graph with just insertions with random hash function selection (\(\mathrm{ins'}\)).
+\end{enumerate}
+
+Together, these two propositions mean that any graph that can be produced by deletions can also be produced by insertions alone.
+
+\subsubsection*{Proofs}
+\begin{enumerate}
+\item \(V\subseteq \mathbb Z_{m} \cup (\mathbb Z_{m} \times X)\) is in \(\mathbf{V}\) if and only if, for all \(i \in \mathbb Z_{m}\):
+  \begin{enumerate}
+  \item \(i \in V \vee \exists x \in X.\; (i, x) \in V\)
+  \item \(\forall x \in X.\; (i, x) \in V \Rightarrow i = h_1(x) \vee i = h_2(x)\)
+  \item \(\forall x,y \in X.\; (i, x) \in V \Rightarrow i \notin V \wedge ((i, y) \in V \Rightarrow x = y))\)
+  \end{enumerate}
+
+  If \(V \in \mathbf{V}\), we show that for all \(x \in X\), \(\mathrm{del}(V, x)\) also has these properties, and thus is in \(\mathbf{V}\).
+
+  There are three cases to consider:
+  \begin{description}
+  \item[\((h_1(x),x) \in V\):] then \(\mathrm{del}(V,x) = (V \setminus \left\{ (h_1(x), x) \right\}) \cup \left\{ h_1(x) \right\} = V'\). The three properties hold for \(V'\):
+    \begin{enumerate}
+    \item we remove \((h_1(x), x)\) from \(V\), but we add \(h_1(x)\) in its place, so it is still true that for all positions we have a node;
+    \item we don't add any node of the form \((i, x)\), so this is trivially true;
+    \item similar to (a), we add \(h_1(x)\) but remove \((h_1(x), x)\), which we know was in \(V\), so we still have exactly one node corresponding to the position \(h_1(x)\).
+    \end{enumerate}
+  \item[\((h_2(x),x) \in V\):] symmetric.
+  \item[\((h_1(x),x),(h_2(x),x) \notin V\):] \(\mathrm{del}(V,x)=V\).
+  \end{description}
+
+\item The graph \(V \in \mathbf V\) can be produced by \(\mathrm{ins'}\) iff there exist \(x_1,x_2,\dots,x_{k} \in X\) and \(V_1,\dots,V_{k-1} \in \mathbf{V}\) such that:
+  \begin{align*}
+    (V_0, x_1)\,&\mathrm{ins'}\,V_1 \\
+    (V_1, x_2)\,&\mathrm{ins'}\,V_2 \\
+    &\;\,\vdots \\
+    (V_{k-2}, x_{k-1})\,&\mathrm{ins'}\,V_{k-1} \\
+    (V_{k-1}, x_k)\,&\mathrm{ins'}\,V \\
+  \end{align*}
+  where \(V_0 = \mathbb Z_{m}\) is the graph corresponding to the empty hash table.
+
+  We show that any valid graph \(V_{k} = \left\{ i_1, \dots, i_{n-k}, (h(x_1), x_{1}), \dots, (h(x_{k}), x_{k}) \right\} \in \mathbf{V}\) (where for each \(x_{l}\), \(h(x_{l})\) is either \(h_1(x_{l})\) or \(h_2(x_{l})\)) can be produced by \(\mathrm{ins'}\), by induction on \(k\):
+  \begin{description}
+  \item[base case] \(k = 0\), trivial: \(V = V_0\).
+  \item[inductive case] we prove the property for \(k+1\) knowing that it holds for \(k\). By inductive hypothesis,
+    \begin{align*}
+      (V_0, x_1)\,&\mathrm{ins'}\,V_1 \\
+      (V_1, x_2)\,&\mathrm{ins'}\,V_2 \\
+                  &\;\,\vdots \\
+      (V_{k-1}, x_k)\,&\mathrm{ins'}\,V_{k} \\
+    \end{align*}
+    where \(V_{k} = \left\{ i_{1}, \dots, i_{n-k}, (h(x_1), x_{1}), \dots, (h(x_{k}), x_{k}) \right\}\).
+
+    It also holds that:
+    \[ (V_{k}, x_{k+1})\,\mathrm{ins'}\,V \]
+    since either \(h_1(x_{k+1}) \in V_{k}\) or \(h_2(x_{k+1}) \in V_{k}\) (otherwise \(V_{k}\) would have \(k+1\) occupied slots, which by construction is impossible), and:
+    \begin{itemize}
+    \item if \(h_1(x_{k+1}) \in V_{k}\) and \(h_2(x_{k+1}) \notin V_{k}\), then
+      \[ (V_{k}, x_{k+1})\,\mathrm{ins'}\,\underbrace{(V_{k} \setminus h_1(x_{k+1})) \cup \left\{ (h_1(x_{k+1}), x_{k+1}) \right\}}_{=V_{k+1}}
+      \]
+    \item if \(h_2(x_{k+1}) \in V_{k}\) and \(h_1(x_{k+1}) \notin V_{k}\), then
+      \[ (V_{k}, x_{k+1})\,\mathrm{ins'}\,\underbrace{(V_{k} \setminus h_2(x_{k+1})) \cup \left\{ (h_2(x_{k+1}), x_{k+1}) \right\}}_{=V_{k+1}}
+      \]
+    \item if \(h_1(x_{k+1}) \in V_{k}\) and \(h_2(x_{k+1}) \in V_{k}\), then
+      \[ (V_{k}, x_{k+1})\,\mathrm{ins'}\,\underbrace{(V_{k} \setminus h_1(x_{k+1})) \cup \left\{ (h_1(x_{k+1}), x_{k+1}) \right\}}_{=V'} \]
+      \[ (V_{k}, x_{k+1})\,\mathrm{ins'}\,\underbrace{(V_{k} \setminus h_2(x_{k+1})) \cup \left\{ (h_2(x_{k+1}), x_{k+1}) \right\}}_{=V''} \]
+      and \(V_{k+1} \in \left\{ V', V'' \right\}\).
+    \end{itemize}
+
+    We conclude that
+    \begin{align*}
+      (V_0, x_1)\,&\mathrm{ins'}\,V_1 \\
+      (V_1, x_2)\,&\mathrm{ins'}\,V_2 \\
+                  &\;\,\vdots \\
+      (V_{k-1}, x_k)\,&\mathrm{ins'}\,V_{k} \\
+      (V_{k}, x_{k+1})\,&\mathrm{ins'}\,V_{k+1}
+    \end{align*}
+    is a sequence of insertions that can (depending on the random choice of hash functions) generate \(V_{k+1}\).
+  \end{description}
+
+\end{enumerate}
+
+
+
+
+\end{document}
