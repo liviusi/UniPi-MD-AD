@@ -1,0 +1,8 @@
+*.aux
+*.eps
+*.fls
+*.log
+*.fdb_latexmk
+*synctex.gz
+
+_minted-*
